@@ -14,6 +14,7 @@ from worldengine.imex import export
 from worldengine.step import Step
 from worldengine.world import World
 from worldengine.version import __version__
+from worldengine.hdf5_serialization import save_hdf5
 
 VERSION = __version__
 
@@ -39,6 +40,8 @@ def generate_world(world_name, width, height, seed, num_plates, output_dir,
             pickle.dump(w, f, pickle.HIGHEST_PROTOCOL)
         elif world_format == 'protobuf':
             f.write(w.protobuf_serialize())
+        elif world_format == 'hdf5':
+            save_hdf5(w, filename)
         else:
             print("Unknown format '%s', not saving " % world_format)
     print("* world data saved in '%s'" % filename)
@@ -251,6 +254,11 @@ def main():
                         help="Save world file using protocol buffer format. " +
                              "Default = store using pickle format",
                         default=False)
+    parser.add_argument('--hdf5', dest='hdf5',
+                        action="store_true",
+                        help="Save world file using HDF5 format. " +
+                             "Default = store using pickle format",
+                        default=False)
     parser.add_argument('-s', '--seed', dest='seed', type=int,
                         help="Use seed=N to initialize the pseudo-random " +
                              "generation. If not provided, one will be " +
@@ -377,6 +385,9 @@ def main():
     if args.number_of_plates < 1 or args.number_of_plates > 100:
         usage(error="Number of plates should be a in [1, 100]")
 
+    if args.protobuf and args.hdf5:
+        usage(error="Protobuf and hdf5 are exclusive choices")
+
     operation = "world"
     if args.OPERATOR is None:
         pass
@@ -409,6 +420,8 @@ def main():
     world_format = 'pickle'
     if args.protobuf:
         world_format = 'protobuf'
+    if args.hdf5:
+        world_format = 'hdf5'
 
     generation_operation = (operation == 'world') or (operation == 'plates')
 
